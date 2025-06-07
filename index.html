@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="hy">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ռեսուրսների ճիշտ կառավարման թեստ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255,255,255,0.1) 10px,
+                rgba(255,255,255,0.1) 20px
+            );
+            animation: move 20s linear infinite;
+        }
+
+        @keyframes move {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            position: relative;
+            z-index: 1;
+            opacity: 0.9;
+        }
+
+        .quiz-container {
+            padding: 40px;
+        }
+
+        .start-screen, .quiz-screen, .result-screen {
+            display: none;
+        }
+
+        .start-screen.active, .quiz-screen.active, .result-screen.active {
+            display: block;
+        }
+
+        .fact-card {
+            background: linear-gradient(135deg, #ff9a9e, #fecfef);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .fact-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .fact-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .question-container {
+            background: linear-gradient(135deg, #a8edea, #fed6e3);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 20px 0;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+
+        .question {
+            font-size: 1.4em;
+            margin-bottom: 25px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .options {
+            display: grid;
+            gap: 15px;
+        }
+
+        .option {
+            background: white;
+            border: 3px solid #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .option::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: left 0.5s;
+        }
+
+        .option:hover::before {
+            left: 100%;
+        }
+
+        .option:hover {
+            border-color: #4CAF50;
+            transform: translateX(10px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .option.selected {
+            background: #4CAF50;
+            color: white;
+            border-color: #45a049;
+        }
+
+        .option.correct {
+            background: #4CAF50;
+            color: white;
+            border-color: #45a049;
+        }
+
+        .option.incorrect {
+            background: #f44336;
+            color: white;
+            border-color: #da190b;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin: 20px 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #ddd;
+            border-radius: 5px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 5px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .score-display {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .score-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: conic-gradient(#4CAF50 0deg, #4CAF50 var(--score-angle), #ddd var(--score-angle), #ddd 360deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+            position: relative;
+            animation: rotateScore 2s ease-in-out;
+        }
+
+        @keyframes rotateScore {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .score-inner {
+            width: 160px;
+            height: 160px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        .score-text {
+            font-size: 3em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            margin-top: 20px;
+        }
+
+        .environmental-icons {
+            display: flex;
+            justify-content: space-around;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .icon-item {
+            text-align: center;
+            padding: 15px;
+            transition: transform 0.3s ease;
+        }
+
+        .icon-item:hover {
+            transform: scale(1.1);
+        }
+
+        .icon-item span {
+            font-size: 3em;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .fun-fact {
+            background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 5px solid #fdcb6e;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .quiz-container {
+                padding: 20px;
+            }
+            
+            .question {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌍 Բնօգտագործման Թեստ</h1>
+            <p>Ստուգեք ձեր գիտելիքները բնական ռեսուրսների կառավարման մասին</p>
+        </div>
+
+        <div class="quiz-container">
+            <!-- Սկսելու էկրան -->
+            <div class="start-screen active">
+                <div class="environmental-icons">
+                    <div class="icon-item">
+                        <span>🌳</span>
+                        <p>Անտառներ</p>
+                    </div>
+                    <div class="icon-item">
+                        <span>💧</span>
+                        <p>Ջուր</p>
+                    </div>
+                    <div class="icon-item">
+                        <span>⚡</span>
+                        <p>Էներգիա</p>
+                    </div>
+                    <div class="icon-item">
+                        <span>🌱</span>
+                        <p>Բիոմազա</p>
+                    </div>
+                </div>
+
+                <div class="fact-card">
+                    <span class="fact-icon">🌍</span>
+                    <h3>Հետաքրքիր փաստ</h3>
+                    <p>Մեր մոլորակի ջրի միայն 3%-ն է քաղցրահամ, իսկ դրանից միայն 1%-ը մատչելի է մարդկանց համար։</p>
+                </div>
+
+                <div class="fun-fact">
+                    <strong>💡 Գիտե՞ք, որ...</strong> Մեկ ծառը տարեկան կարող է կլանել մինչև 22 կգ ածխաթթու գազ և արտադրել բավարար թթվածին 2 մարդու համար։
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" onclick="startQuiz()">Սկսել Թեստը 🚀</button>
+                </div>
+            </div>
+
+            <!-- Թեստի էկրան -->
+            <div class="quiz-screen">
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+                <div id="question-number"></div>
+                <div class="question-container">
+                    <div class="question" id="question"></div>
+                    <div class="options" id="options"></div>
+                </div>
+                <div style="text-align: center;">
+                    <button class="btn" id="next-btn" onclick="nextQuestion()" style="display: none;">Հաջորդ Հարցը ➡️</button>
+                </div>
+            </div>
+
+            <!-- Արդյունքների էկրան -->
+            <div class="result-screen">
+                <div class="score-display">
+                    <h2>🎉 Շնորհավորում ենք!</h2>
+                    <div class="score-circle" id="score-circle">
+                        <div class="score-inner">
+                            <div class="score-text" id="final-score">0%</div>
+                            <div>Արդյունք</div>
+                        </div>
+                    </div>
+                    <div id="score-message"></div>
+                    
+                    <div class="fun-fact">
+                        <strong>🌿 Բնապահպանական խորհուրդ:</strong> 
+                        <span id="eco-tip">Փակեք ծորակը ատամներ մաքրելիս:</span>
+                    </div>
+
+                    <button class="btn" onclick="restartQuiz()">Նորից փորձել 🔄</button>
+                    <button class="btn download-btn" onclick="downloadResults()">Ներբեռնել Արդյունքները 📄</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "🌊 Որքա՞ն ջուր է ծախսվում մեկ կիլոգրամ բամբակ արտադրելու  համար:",
+                options: ["100 լիտր", "500 լիտր", "1000 լիտր", "2700 լիտր"],
+                correct: 3,
+                explanation: "Բամբակի արտադրությունը շատ ջրատար գործընթաց է"
+            },
+            {
+                question: "🌳 Որ պետությունը ամենաշատ ծառերը ունի աշխարհում:",
+                options: ["Բրազիլիա", "Ռուսաստան", "Կանադա", "ԱՄՆ"],
+                correct: 1,
+                explanation: "Ռուսաստանի տարածքի 60%-ը ծածկված է անտառներով"
+            },
+            {
+                question: "♻️ Քա՞նի տարի է պետք մի պլաստիկ շշի քայքայման համար:",
+                options: ["10-50 տարի", "100-200 տարի", "400-500 տարի", "1000+ տարի"],
+                correct: 2,
+                explanation: "Պլաստիկի քայքայումը բնությունում շատ երկար է տևում"
+            },
+            {
+                question: "🔋 Ո՞ր էներգիայի աղբյուրն է ամենամաքուրը։",
+                options: ["Քամու էներգիա", "Ջրային էներգիա", "Արևային էներգիա", "Բոլորը հավասարապես"],
+                correct: 3,
+                explanation: "Բոլոր վերանորոգվող էներգիայի աղբյուրները համարվում են մաքուր"
+            },
+            {
+                question: "🐟 Օվկիանոսների ո՞ր տոկոսն է աղտոտված:",
+                options: ["20%", "40%", "60%", "80%"],
+                correct: 3,
+                explanation: "Մարդկային գործունեության պատճառով օվկիանոսների մեծ մասն է աղտոտված"
+            },
+            {
+                question: "🌡️ Որքա՞ն է բարձրացել գլոբալ ջերմաստիճանը վերջին 100 տարում:",
+                options: ["0.5°C", "1.1°C", "2°C", "3°C"],
+                correct: 1,
+                explanation: "Գլոբալ տաքացումը մեծ մարտահրավեր է մեր ժամանակի համար"
+            },
+            {
+                question: "🌿 Ինչպիսի՞ն է ծառերի դերը ածխածնի ցիկլում:",
+                options: ["Արտանետում են CO2", "Կլանում են CO2", "Չեն ազդում", "Կախված է եղանակից"],
+                correct: 1,
+                explanation: "Ծառերը ֆոտոսինթեզի միջոցով կլանում են CO2 և արտադրում թթվածին"
+            },
+            {
+                question: "💧 Որտե՞ղ է կենտրոնացած Երկրի քաղցրահամ ջրի ամենամեծ պաշարը:",
+                options: ["Լճերում", "Գետերում", "Սառույցների մեջ", "Ստորգետնյա ջրում"],
+                correct: 2,
+                explanation: "Քաղցր ջրի 68.7%-ը գտնվում է սառույցների և հյուսիսակիցերի մեջ"
+            },
+            {
+                question: "🦋 Ինչու՞ են կարևոր մեղուները էկոհամակարգի համար:",
+                options: ["Մեղր են արտադրում", "Փոշոտում են բույսերը", "Վնասակներին են կերում", "Մթնոլորտը մաքրում են"],
+                correct: 1,
+                explanation: "Մեղուները կարևոր ցողակիր են՝ փոշոտելով բույսերի 30%-ը"
+            },
+            {
+                question: "🌍 Ո՞ր երկիրն է արտադրում ամենաշատ վերանորոգվող էլեկտրականությունը:",
+                options: ["Գերմանիա", "Չինաստան", "ԱՄՆ", "Նորվեգիա"],
+                correct: 1,
+                explanation: "Չինաստանը գլխավորում է վերանորոգվող էներգիայի արտադրության մեջ"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+        let answers = [];
+
+        const ecoTips = [
+            "Փակեք ծորակը ատամներ մաքրելիս:",
+            "Նախընտրեք հանրային տրանսպորտը կամ հեծանիվը` մեքենայի փոխարեն:",
+            "Տարանջատեք աղբը և վերամշակեք հնարավորինս շատ նյութեր:",
+            "Օգտագործեք LED լամպեր՝ էներգիա խնայելու համար:",
+            "Գնեք տեղական և սեզոնային սնունդ:",
+            "Անջատեք էլեկտրական սարքերը, երբ չեք օգտագործում:",
+            "Օգտագործեք էկո տոպրակներ գնումների համար:"
+        ];
+
+        function startQuiz() {
+            document.querySelector('.start-screen').classList.remove('active');
+            document.querySelector('.quiz-screen').classList.add('active');
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const question = questions[currentQuestion];
+            document.getElementById('question-number').innerHTML = `Հարց ${currentQuestion + 1} / ${questions.length}`;
+            document.getElementById('question').innerHTML = question.question;
+            
+            const optionsHtml = question.options.map((option, index) => 
+                `<div class="option" onclick="selectOption(${index})">${option}</div>`
+            ).join('');
+            
+            document.getElementById('options').innerHTML = optionsHtml;
+            document.getElementById('next-btn').style.display = 'none';
+            
+            const progress = ((currentQuestion) / questions.length) * 100;
+            document.getElementById('progress').style.width = progress + '%';
+        }
+
+        function selectOption(selectedIndex) {
+            const options = document.querySelectorAll('.option');
+            const question = questions[currentQuestion];
+            
+            // Remove previous selections
+            options.forEach(option => {
+                option.classList.remove('selected', 'correct', 'incorrect');
+            });
+            
+            // Mark selected option
+            options[selectedIndex].classList.add('selected');
+            
+            // Show correct answer after 1 second
+            setTimeout(() => {
+                options[question.correct].classList.add('correct');
+                if (selectedIndex !== question.correct) {
+                    options[selectedIndex].classList.add('incorrect');
+                }
+                
+                // Disable all options
+                options.forEach(option => {
+                    option.style.pointerEvents = 'none';
+                });
+                
+                document.getElementById('next-btn').style.display = 'inline-block';
+            }, 1000);
+            
+            // Record answer
+            answers[currentQuestion] = selectedIndex;
+            if (selectedIndex === question.correct) {
+                score++;
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            document.querySelector('.quiz-screen').classList.remove('active');
+            document.querySelector('.result-screen').classList.add('active');
+            
+            const percentage = Math.round((score / questions.length) * 100);
+            const scoreAngle = (percentage / 100) * 360;
+            
+            document.getElementById('final-score').innerHTML = percentage + '%';
+            document.getElementById('score-circle').style.setProperty('--score-angle', scoreAngle + 'deg');
+            
+            let message = '';
+            if (percentage >= 80) {
+                message = '🌟 Շնորհավորում! Դուք բնապահպանության մասնագետ եք!';
+            } else if (percentage >= 60) {
+                message = '👏 Լավ արդյունք! Դուք լավ գիտելիքներ ունեք:';
+            } else if (percentage >= 40) {
+                message = '📚 Ոչ վատ, բայց կարելի է ավելի լավ սովորել:';
+            } else {
+                message = '💪 Չհուսահատվեք! Կարդացեք ավելին բնապահպանության մասին:';
+            }
+            
+            document.getElementById('score-message').innerHTML = message;
+            document.getElementById('eco-tip').innerHTML = ecoTips[Math.floor(Math.random() * ecoTips.length)];
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            answers = [];
+            document.querySelector('.result-screen').classList.remove('active');
+            document.querySelector('.start-screen').classList.add('active');
+        }
+
+        function downloadResults() {
+            const percentage = Math.round((score / questions.length) * 100);
+            let content = `ԲՆՕԳՏԱԳՈՐԾՄԱՆ ԹԵՍՏԻ ԱՐԴՅՈՒՆՔՆԵՐ\n`;
+            content += `=====================================\n\n`;
+            content += `Ընդհանուր արդյունք: ${score}/${questions.length} (${percentage}%)\n\n`;
+            
+            content += `ՄԱՆՐԱՄԱՍՆ ԱՐԴՅՈՒՆՔՆԵՐ:\n`;
+            content += `========================\n\n`;
+            
+            questions.forEach((q, index) => {
+                const userAnswer = answers[index];
+                const isCorrect = userAnswer === q.correct;
+                content += `${index + 1}. ${q.question.replace(/[🌊🌳♻️🔋🐟🌡️🌿💧🦋🌍]/g, '')}\n`;
+                content += `   Ձեր պատասխան: ${q.options[userAnswer]}\n`;
+                content += `   Ճիշտ պատասխան: ${q.options[q.correct]}\n`;
+                content += `   Արդյունք: ${isCorrect ? '✓ Ճիշտ' : '✗ Սխալ'}\n`;
+                if (q.explanation) {
+                    content += `   Բացատրություն: ${q.explanation}\n`;
+                }
+                content += `\n`;
+            });
+            
+            content += `\nԲՆԱՊԱՀՊԱՆԱԿԱՆ ԽՈՐՀՈՒՐԴՆԵՐ:\n`;
+            content += `=======================\n`;
+            ecoTips.forEach((tip, index) => {
+                content += `${index + 1}. ${tip}\n`;
+            });
+            
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Բնօգտագործման_թեստ_արդյունքներ_${new Date().toLocaleDateString()}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
