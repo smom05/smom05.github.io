@@ -594,22 +594,18 @@
             const options = document.querySelectorAll('.option');
             const question = questions[currentQuestion];
             
-            // Remove previous selections
             options.forEach(option => {
                 option.classList.remove('selected', 'correct', 'incorrect');
             });
             
-            // Mark selected option
             options[selectedIndex].classList.add('selected');
             
-            // Show correct answer after 1 second
             setTimeout(() => {
                 options[question.correct].classList.add('correct');
                 if (selectedIndex !== question.correct) {
                     options[selectedIndex].classList.add('incorrect');
                 }
                 
-                // Disable all options
                 options.forEach(option => {
                     option.style.pointerEvents = 'none';
                 });
@@ -617,7 +613,6 @@
                 document.getElementById('next-btn').style.display = 'inline-block';
             }, 1000);
             
-            // Record answer
             answers[currentQuestion] = selectedIndex;
             if (selectedIndex === question.correct) {
                 score++;
